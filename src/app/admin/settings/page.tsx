@@ -63,10 +63,8 @@ export default function SettingsPage() {
     role: "ADMIN" as AdminRole,
   });
 
-  // Confirmation dialogs for dangerous actions
-  const [resetVotesOpen, setResetVotesOpen] = useState(false);
-  const [freshElectionOpen, setFreshElectionOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
+  // Confirmation input for dangerous actions
+  const [resetInput, setResetInput] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -236,8 +234,7 @@ export default function SettingsPage() {
       });
       if (res.ok) {
         toast.success("All votes have been reset successfully!");
-        setResetVotesOpen(false);
-        setConfirmText("");
+        setResetInput("");
       } else {
         const data = await res.json();
         toast.error(data.error || "Failed to reset votes");
@@ -259,8 +256,7 @@ export default function SettingsPage() {
       });
       if (res.ok) {
         toast.success("Election has been completely reset!");
-        setFreshElectionOpen(false);
-        setConfirmText("");
+        setResetInput("");
         // Reset local state
         setElection((prev) =>
           prev ? { ...prev, status: "NOT_STARTED", election_title: "", start_time: null, end_time: null } : null
@@ -457,42 +453,84 @@ export default function SettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Reset Votes */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-red-50/50 border border-red-100">
-            <div>
-              <p className="font-medium text-[#1A1A1A] text-sm">Reset All Votes</p>
-              <p className="text-xs text-[#6B7280] mt-0.5">
-                Clears all cast votes and resets every student&apos;s voted status. Election settings remain unchanged.
-              </p>
+          <div className="p-4 rounded-xl bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/30 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="font-semibold text-[#1A1A1A] dark:text-slate-200 text-sm">Action 1: Reset All Votes</p>
+                <p className="text-xs text-[#6B7280] dark:text-slate-400">
+                  Clears all cast votes and resets every student&apos;s voted status. Election settings (title, candidates, dates) remain unchanged.
+                </p>
+                <p className="text-xs font-mono font-medium text-red-600 dark:text-red-400">
+                  Required phrase: RESET VOTES
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-[#1A1A1A] dark:text-slate-200 text-sm">Action 2: Start Fresh Election</p>
+                <p className="text-xs text-[#6B7280] dark:text-slate-400">
+                  Wipes everything. Clears all votes, resets student voted status, deletes all OTP sessions, and resets election settings.
+                </p>
+                <p className="text-xs font-mono font-medium text-red-600 dark:text-red-400">
+                  Required phrase: FRESH ELECTION
+                </p>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => { setConfirmText(""); setResetVotesOpen(true); }}
-              disabled={!!actionLoading}
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shrink-0 ml-4"
-            >
-              <Eraser className="w-4 h-4 mr-1" />
-              Reset Votes
-            </Button>
-          </div>
 
-          {/* Fresh Election */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-red-50/50 border border-red-100">
-            <div>
-              <p className="font-medium text-[#1A1A1A] text-sm">Start Fresh Election</p>
-              <p className="text-xs text-[#6B7280] mt-0.5">
-                Completely resets everything — votes, election title, schedule, and OTP sessions. Use this to begin a brand new election.
-              </p>
+            <Separator className="bg-red-100 dark:bg-red-900/30" />
+
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                <div className="flex-1 w-full space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#6B7280] dark:text-slate-300">
+                    Type confirmation phrase below:
+                  </Label>
+                  <Input
+                    value={resetInput}
+                    onChange={(e) => setResetInput(e.target.value)}
+                    placeholder="Type RESET VOTES or FRESH ELECTION"
+                    className="border-red-200 dark:border-red-900 focus:border-red-400 focus:ring-red-400/20"
+                  />
+                </div>
+                <div className="shrink-0 w-full sm:w-auto">
+                  {resetInput === "RESET VOTES" ? (
+                    <Button
+                      onClick={handleResetVotes}
+                      disabled={!!actionLoading}
+                      variant="destructive"
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-medium"
+                    >
+                      {actionLoading === "reset_votes" ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                      ) : (
+                        <Eraser className="w-4 h-4 mr-1" />
+                      )}
+                      Reset All Votes
+                    </Button>
+                  ) : resetInput === "FRESH ELECTION" ? (
+                    <Button
+                      onClick={handleFreshElection}
+                      disabled={!!actionLoading}
+                      variant="destructive"
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-medium animate-pulse"
+                    >
+                      {actionLoading === "fresh_election" ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-1" />
+                      )}
+                      Start Fresh Election
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled
+                      variant="outline"
+                      className="w-full border-gray-200 dark:border-slate-800 text-gray-400 bg-gray-50 dark:bg-slate-900/50"
+                    >
+                      Enter Phrase to Confirm
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => { setConfirmText(""); setFreshElectionOpen(true); }}
-              disabled={!!actionLoading}
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 shrink-0 ml-4"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              Fresh Election
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -650,98 +688,6 @@ export default function SettingsPage() {
               className="bg-[#4A90E2] hover:bg-[#357ABD] text-white"
             >
               Add Admin
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reset Votes Confirmation Dialog */}
-      <Dialog open={resetVotesOpen} onOpenChange={(open) => { setResetVotesOpen(open); if (!open) setConfirmText(""); }}>
-        <DialogContent className="max-w-md border-0 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              Reset All Votes
-            </DialogTitle>
-            <DialogDescription className="text-[#6B7280] text-sm pt-2">
-              This will permanently delete all cast votes and reset every student&apos;s voted status. Election settings will remain unchanged.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-red-50 border border-red-100">
-              <p className="text-xs text-red-600 font-medium">⚠️ This action cannot be undone.</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Type <span className="font-mono font-bold text-red-600">RESET VOTES</span> to confirm</Label>
-              <Input
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="Type RESET VOTES"
-                className="border-red-200 focus:border-red-400"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setResetVotesOpen(false); setConfirmText(""); }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleResetVotes}
-              disabled={confirmText !== "RESET VOTES" || !!actionLoading}
-              variant="destructive"
-            >
-              {actionLoading === "reset_votes" ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-1" />
-              ) : (
-                <Eraser className="w-4 h-4 mr-1" />
-              )}
-              Confirm Reset
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Fresh Election Confirmation Dialog */}
-      <Dialog open={freshElectionOpen} onOpenChange={(open) => { setFreshElectionOpen(open); if (!open) setConfirmText(""); }}>
-        <DialogContent className="max-w-md border-0 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              Start Fresh Election
-            </DialogTitle>
-            <DialogDescription className="text-[#6B7280] text-sm pt-2">
-              This will completely reset everything — all votes, election title, schedule, OTP sessions. The system will return to a clean slate.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-red-50 border border-red-100">
-              <p className="text-xs text-red-600 font-medium">⚠️ This action cannot be undone. All election data will be permanently lost.</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Type <span className="font-mono font-bold text-red-600">FRESH ELECTION</span> to confirm</Label>
-              <Input
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="Type FRESH ELECTION"
-                className="border-red-200 focus:border-red-400"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setFreshElectionOpen(false); setConfirmText(""); }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleFreshElection}
-              disabled={confirmText !== "FRESH ELECTION" || !!actionLoading}
-              variant="destructive"
-            >
-              {actionLoading === "fresh_election" ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-1" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1" />
-              )}
-              Confirm Fresh Start
             </Button>
           </DialogFooter>
         </DialogContent>

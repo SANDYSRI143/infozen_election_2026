@@ -6,7 +6,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/auth";
 import { electionSettingsSchema } from "@/lib/validations";
 import { clearRateLimitByPrefix } from "@/lib/rate-limit";
-import { resetAllVotes, freshElectionReset } from "@/lib/supabase/db";
 
 export async function GET() {
   try {
@@ -236,39 +235,16 @@ async function handleEndElection(adminEmail: string) {
 async function handleResetVotes(adminEmail: string) {
   const supabase = createAdminClient();
 
-  // Strategy 1: Try Supabase RPC (works if SQL functions were deployed)
-  const { error: rpcError } = await supabase.rpc("admin_reset_votes");
+  const { error } = await supabase.rpc("admin_execute_reset", {
+    action_type: "RESET_VOTES"
+  });
 
-  if (rpcError) {
-    console.warn("admin_reset_votes RPC not available:", rpcError.message);
-
-    // Strategy 2: Direct PostgreSQL connection (bypasses trigger via DO block)
-    const dbResult = await resetAllVotes();
-
-    if (!dbResult.success) {
-      console.error("Direct DB reset failed:", dbResult.error);
-
-      // Strategy 3: Try Supabase client (last resort, will fail if trigger exists)
-      const { error: deleteError } = await supabase
-        .from("votes")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      if (deleteError) {
-        return NextResponse.json(
-          {
-            error: "Failed to reset votes. Please add SUPABASE_DB_URL to your .env.local file. Find it in Supabase Dashboard → Settings → Database → Connection string (URI).",
-          },
-          { status: 500 }
-        );
-      }
-
-      // If delete succeeded (no trigger), also reset students
-      await supabase
-        .from("students")
-        .update({ is_voted: false, voted_at: null })
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-    }
+  if (error) {
+    console.error("Database reset votes error:", error);
+    return NextResponse.json(
+      { error: "Failed to reset votes. Make sure you have deployed the SQL function in Supabase. Details: " + error.message },
+      { status: 500 }
+    );
   }
 
   // Clear in-memory rate limiter
@@ -286,58 +262,16 @@ async function handleResetVotes(adminEmail: string) {
 async function handleFreshElection(adminEmail: string) {
   const supabase = createAdminClient();
 
-  // Strategy 1: Try Supabase RPC (works if SQL functions were deployed)
-  const { error: rpcError } = await supabase.rpc("admin_fresh_election");
+  const { error } = await supabase.rpc("admin_execute_reset", {
+    action_type: "FRESH_ELECTION"
+  });
 
-  if (rpcError) {
-    console.warn("admin_fresh_election RPC not available:", rpcError.message);
-
-    // Strategy 2: Direct PostgreSQL connection (bypasses trigger via DO block)
-    const dbResult = await freshElectionReset();
-
-    if (!dbResult.success) {
-      console.error("Direct DB fresh reset failed:", dbResult.error);
-
-      // Strategy 3: Try Supabase client (last resort)
-      const { error: deleteError } = await supabase
-        .from("votes")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      if (deleteError) {
-        return NextResponse.json(
-          {
-            error: "Failed to reset election. Please add SUPABASE_DB_URL to your .env.local file. Find it in Supabase Dashboard → Settings → Database → Connection string (URI).",
-          },
-          { status: 500 }
-        );
-      }
-
-      // If delete succeeded, reset everything else
-      await supabase
-        .from("students")
-        .update({ is_voted: false, voted_at: null })
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      const { data: current } = await supabase
-        .from("election_settings")
-        .select("id")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (current) {
-        await supabase
-          .from("election_settings")
-          .update({ status: "NOT_STARTED", start_time: null, end_time: null })
-          .eq("id", current.id);
-      }
-
-      await supabase
-        .from("otp_verifications")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-    }
+  if (error) {
+    console.error("Database fresh election error:", error);
+    return NextResponse.json(
+      { error: "Failed to reset election. Make sure you have deployed the SQL function in Supabase. Details: " + error.message },
+      { status: 500 }
+    );
   }
 
   // Clear in-memory rate limiter
