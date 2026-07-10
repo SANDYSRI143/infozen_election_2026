@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
-import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,15 +30,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1); // 1=credentials, 2=otp, 3=captcha
+  const [step, setStep] = useState<1 | 2>(1); // 1=credentials, 2=otp
   const [loading, setLoading] = useState(false);
   const [studentEmail, setStudentEmail] = useState("");
   const [registerNumber, setRegisterNumber] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
   const [otp, setOtp] = useState("");
 
-  const captchaRef = useRef<ReCAPTCHA>(null);
-  const [captchaToken, setCaptchaToken] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -143,17 +140,10 @@ export default function LoginPage() {
     }
   };
 
-  // Step 2 & 3: Verify OTP + CAPTCHA
+  // Step 2: Verify OTP
   const onVerifyOtp = async () => {
     if (otp.length !== 6) {
       toast.error("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    const token = captchaToken || "dev-skip";
-    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-    if (siteKey && siteKey !== "your-recaptcha-site-key" && !captchaToken) {
-      toast.error("Please complete the CAPTCHA");
       return;
     }
 
@@ -163,7 +153,6 @@ export default function LoginPage() {
         register_number: registerNumber,
         email: studentEmail,
         otp,
-        captcha_token: token,
       });
 
       if (!parsed.success) {
@@ -353,8 +342,8 @@ export default function LoginPage() {
                 </motion.form>
               )}
 
-              {/* Step 2 & 3: OTP + CAPTCHA */}
-              {(step === 2 || step === 3) && (
+              {/* Step 2: OTP */}
+              {step === 2 && (
                 <motion.div
                   key="step2"
                   initial={{ opacity: 0, x: 20 }}
@@ -399,18 +388,6 @@ export default function LoginPage() {
                       </button>
                     </div>
                   </div>
-
-                  {/* CAPTCHA */}
-                  {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY &&
-                    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== "your-recaptcha-site-key" && (
-                      <div className="flex justify-center">
-                        <ReCAPTCHA
-                          ref={captchaRef}
-                          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                          onChange={(token) => setCaptchaToken(token || "")}
-                        />
-                      </div>
-                    )}
 
                   <div className="flex gap-3">
                     <Button

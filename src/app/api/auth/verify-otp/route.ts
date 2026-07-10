@@ -1,45 +1,11 @@
 // ============================================================
-// API: Verify OTP + CAPTCHA → Create Session (Email-based)
+// API: Verify OTP → Create Session (Email-based)
 // ============================================================
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { otpSchema } from "@/lib/validations";
 import { createSession } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-
-async function verifyCaptcha(token: string): Promise<boolean> {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-
-  // Skip CAPTCHA in development if no key configured or dev-skip token
-  if (!secret || secret === "your-recaptcha-secret-key") {
-    return true;
-  }
-
-  // Allow dev-skip token in development (localhost)
-  if (token === "dev-skip") {
-    return true;
-  }
-
-  try {
-    const response = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `secret=${secret}&response=${token}`,
-      }
-    );
-    const data = await response.json();
-    console.log("reCAPTCHA response data from Google:", data);
-    if (!data.success) {
-      console.warn("reCAPTCHA failed. Error codes:", data["error-codes"]);
-    }
-    return data.success === true;
-  } catch (err) {
-    console.error("reCAPTCHA network/verification error:", err);
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,16 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { register_number, email, otp, captcha_token } = parsed.data;
-
-    // Verify CAPTCHA
-    const captchaValid = await verifyCaptcha(captcha_token);
-    if (!captchaValid) {
-      return NextResponse.json(
-        { error: "Captcha Verification Failed" },
-        { status: 400 }
-      );
-    }
+    const { register_number, email, otp } = parsed.data;
 
     const supabase = createAdminClient();
 

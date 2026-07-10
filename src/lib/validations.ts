@@ -31,9 +31,6 @@ export const otpSchema = z.object({
     .string()
     .length(6, "OTP must be 6 digits")
     .regex(/^\d{6}$/, "OTP must be numeric"),
-  captcha_token: z
-    .string()
-    .min(1, "CAPTCHA verification required"),
 });
 
 export const voteSubmitSchema = z.object({
