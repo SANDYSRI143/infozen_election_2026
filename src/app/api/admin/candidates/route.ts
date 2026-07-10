@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/auth";
 import { candidateSchema } from "@/lib/validations";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getAdminSession();
     if (!session) {
@@ -14,6 +14,28 @@ export async function GET() {
     }
 
     const supabase = createAdminClient();
+
+    // When with_votes=true, use the RPC that joins candidates with votes
+    const { searchParams } = new URL(request.url);
+    const withVotes = searchParams.get("with_votes") === "true";
+
+    if (withVotes) {
+      const { data, error } = await supabase.rpc("get_election_results");
+      if (error) {
+        return NextResponse.json({ error: "Failed to fetch results" }, { status: 500 });
+      }
+      const candidatesWithVotes = (data || []).map((r: Record<string, unknown>) => ({
+        id: r.candidate_id,
+        candidate_name: r.candidate_name,
+        position: r.position,
+        department: r.department,
+        photo_url: r.photo_url,
+        vote_count: Number(r.vote_count) || 0,
+        status: "active",
+      }));
+      return NextResponse.json({ candidates: candidatesWithVotes });
+    }
+
     const { data, error } = await supabase
       .from("candidates")
       .select("*")

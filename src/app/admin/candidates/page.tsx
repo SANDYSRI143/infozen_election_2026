@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Pencil, Trash2, UserCheck, Loader2, RotateCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, UserCheck, Loader2, RotateCcw, Upload, ImageIcon, X } from "lucide-react";
 import { POSITIONS } from "@/types";
 import type { Candidate, Position } from "@/types";
 
@@ -33,6 +33,7 @@ export default function CandidatesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -122,6 +123,48 @@ export default function CandidatesPage() {
       toast.error("Network error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate on client side too
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid file type. Use JPG, PNG, WebP, or GIF.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 2MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/candidates/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setForm((prev) => ({ ...prev, photo_url: data.url }));
+        toast.success("Photo uploaded successfully!");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Upload failed");
+      }
+    } catch {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
+      // Reset the input so re-selecting the same file triggers onChange
+      e.target.value = "";
     }
   };
 
@@ -327,14 +370,68 @@ export default function CandidatesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-medium">Photo URL</Label>
+              <Label className="font-medium">Candidate Photo</Label>
+              
+              {/* Image Preview */}
+              {form.photo_url && (
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-[#E2E8F0] bg-[#F8FAFC]">
+                  <img
+                    src={form.photo_url}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, photo_url: "" })}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Upload Button */}
+              <div className="flex gap-2">
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                  <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-[#E2E8F0] hover:border-[#4A90E2] hover:bg-[#F0F7FF] cursor-pointer transition-all text-sm text-[#6B7280] hover:text-[#4A90E2]">
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Photo (max 2MB)
+                      </>
+                    )}
+                  </div>
+                </label>
+              </div>
+
+              {/* Or enter URL manually */}
+              <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+                <div className="flex-1 border-t border-[#E2E8F0]" />
+                <span>or enter URL</span>
+                <div className="flex-1 border-t border-[#E2E8F0]" />
+              </div>
               <Input
                 value={form.photo_url}
                 onChange={(e) =>
                   setForm({ ...form, photo_url: e.target.value })
                 }
-                placeholder="https://... (optional)"
-                className="border-[#E2E8F0]"
+                placeholder="https://... (paste image URL)"
+                className="border-[#E2E8F0] text-sm"
               />
             </div>
           </div>

@@ -56,14 +56,14 @@ export default function CandidateCard({
           <div className="flex items-start gap-4">
             {/* Photo */}
             <div className="relative">
-              <Avatar className="w-16 h-16 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700">
+              <Avatar className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700">
                 <AvatarImage src={candidate.photo_url || undefined} alt={candidate.candidate_name} />
-                <AvatarFallback className="rounded-xl bg-[#DCEEFF] dark:bg-slate-700 text-[#4A90E2] dark:text-cyan-400 text-lg font-semibold">
+                <AvatarFallback className="rounded-xl bg-[#DCEEFF] dark:bg-slate-700 text-[#4A90E2] dark:text-cyan-400 text-2xl sm:text-3xl font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               {candidate.symbol_url && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-white dark:bg-slate-800 border border-[#E2E8F0] dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white dark:bg-slate-800 border border-[#E2E8F0] dark:border-slate-700 shadow-sm overflow-hidden">
                   <img src={candidate.symbol_url} alt="Symbol" className="w-full h-full object-cover" />
                 </div>
               )}

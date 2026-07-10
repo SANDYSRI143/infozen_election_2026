@@ -26,7 +26,7 @@ export default function AdminDashboard() {
     try {
       const [electionRes, candidatesRes] = await Promise.all([
         fetch("/api/admin/election"),
-        fetch("/api/admin/candidates"),
+        fetch("/api/admin/candidates?with_votes=true"),
       ]);
 
       if (electionRes.ok) {
