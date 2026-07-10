@@ -52,7 +52,6 @@ export interface Candidate {
   position: Position;
   department: string;
   photo_url: string | null;
-  photo_fit: "cover" | "contain" | "fill" | null;
   symbol_url: string | null;
   bio: string | null;
   vision_statement: string | null;
