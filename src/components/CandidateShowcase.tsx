@@ -65,8 +65,16 @@ export default function CandidateShowcase({
 
           {/* Candidate Photo & Info */}
           <div className="flex gap-4 mb-4">
-            <Avatar className="w-20 h-20 flex-shrink-0 ring-2 ring-[#4A90E2]">
-              <AvatarImage src={candidate.photo_url || ""} alt={candidate.candidate_name} />
+            <Avatar className={`w-20 h-20 flex-shrink-0 ring-2 ring-[#4A90E2] ${candidate.photo_fit === "contain" ? "bg-[#F8FAFC] dark:bg-slate-800" : ""}`}>
+              <AvatarImage
+                src={candidate.photo_url || ""}
+                alt={candidate.candidate_name}
+                className={
+                  candidate.photo_fit === "contain" ? "object-contain" :
+                  candidate.photo_fit === "fill" ? "object-fill" :
+                  "object-cover"
+                }
+              />
               <AvatarFallback className="bg-[#4A90E2] text-white font-bold text-lg">
                 {initials}
               </AvatarFallback>

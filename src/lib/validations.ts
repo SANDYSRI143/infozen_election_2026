@@ -67,6 +67,7 @@ export const candidateSchema = z.object({
   achievements: z.string().max(500).optional().or(z.literal("")),
   campaign_quote: z.string().max(200).optional().or(z.literal("")),
   photo_url: z.string().url().optional().or(z.literal("")),
+  photo_fit: z.enum(["cover", "contain", "fill"]).optional(),
   symbol_url: z.string().url().optional().or(z.literal("")),
 });
 

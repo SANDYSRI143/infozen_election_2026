@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Pencil, Trash2, UserCheck, Loader2, RotateCcw, Upload, ImageIcon, X } from "lucide-react";
+import { Plus, Pencil, Trash2, UserCheck, Loader2, RotateCcw, Upload, ImageIcon, X, Maximize, Minimize, RectangleHorizontal } from "lucide-react";
 import { POSITIONS } from "@/types";
 import type { Candidate, Position } from "@/types";
 
@@ -42,6 +42,7 @@ export default function CandidatesPage() {
     department: "",
     bio: "",
     photo_url: "",
+    photo_fit: "cover" as "cover" | "contain" | "fill",
   });
 
   const fetchCandidates = async () => {
@@ -64,7 +65,7 @@ export default function CandidatesPage() {
 
   const openAddDialog = () => {
     setEditCandidate(null);
-    setForm({ candidate_name: "", position: "", department: "", bio: "", photo_url: "" });
+    setForm({ candidate_name: "", position: "", department: "", bio: "", photo_url: "", photo_fit: "cover" });
     setDialogOpen(true);
   };
 
@@ -76,6 +77,7 @@ export default function CandidatesPage() {
       department: candidate.department,
       bio: candidate.bio || "",
       photo_url: candidate.photo_url || "",
+      photo_fit: candidate.photo_fit || "cover",
     });
     setDialogOpen(true);
   };
@@ -372,13 +374,17 @@ export default function CandidatesPage() {
             <div className="space-y-2">
               <Label className="font-medium">Candidate Photo</Label>
               
-              {/* Image Preview */}
+              {/* Image Preview with fit applied */}
               {form.photo_url && (
-                <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-[#E2E8F0] bg-[#F8FAFC]">
+                <div className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-[#E2E8F0] bg-[#F8FAFC]">
                   <img
                     src={form.photo_url}
                     alt="Preview"
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${
+                      form.photo_fit === "contain" ? "object-contain" :
+                      form.photo_fit === "fill" ? "object-fill" :
+                      "object-cover"
+                    }`}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
@@ -390,6 +396,35 @@ export default function CandidatesPage() {
                   >
                     <X className="w-3 h-3" />
                   </button>
+                </div>
+              )}
+
+              {/* Photo Fit Option */}
+              {form.photo_url && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-[#6B7280]">Image Fit</Label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: "cover" as const, label: "Cover", desc: "Crop to fill", icon: Maximize },
+                      { value: "contain" as const, label: "Contain", desc: "Show full image", icon: Minimize },
+                      { value: "fill" as const, label: "Fill", desc: "Stretch to fit", icon: RectangleHorizontal },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, photo_fit: opt.value })}
+                        className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-xs ${
+                          form.photo_fit === opt.value
+                            ? "border-[#4A90E2] bg-[#F0F7FF] text-[#4A90E2]"
+                            : "border-[#E2E8F0] hover:border-[#4A90E2]/40 text-[#6B7280] hover:text-[#4A90E2]"
+                        }`}
+                      >
+                        <opt.icon className="w-4 h-4" />
+                        <span className="font-medium">{opt.label}</span>
+                        <span className="text-[10px] opacity-70">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

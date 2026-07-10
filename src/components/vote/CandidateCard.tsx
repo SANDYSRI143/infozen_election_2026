@@ -56,8 +56,16 @@ export default function CandidateCard({
           <div className="flex items-start gap-4">
             {/* Photo */}
             <div className="relative">
-              <Avatar className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700">
-                <AvatarImage src={candidate.photo_url || undefined} alt={candidate.candidate_name} />
+              <Avatar className={`w-28 h-28 sm:w-32 sm:h-32 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700 ${candidate.photo_fit === "contain" ? "bg-[#F8FAFC] dark:bg-slate-800" : ""}`}>
+                <AvatarImage
+                  src={candidate.photo_url || undefined}
+                  alt={candidate.candidate_name}
+                  className={
+                    candidate.photo_fit === "contain" ? "object-contain" :
+                    candidate.photo_fit === "fill" ? "object-fill" :
+                    "object-cover"
+                  }
+                />
                 <AvatarFallback className="rounded-xl bg-[#DCEEFF] dark:bg-slate-700 text-[#4A90E2] dark:text-cyan-400 text-2xl sm:text-3xl font-semibold">
                   {initials}
                 </AvatarFallback>

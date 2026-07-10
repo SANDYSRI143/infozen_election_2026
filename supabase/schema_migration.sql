@@ -45,3 +45,13 @@ BEGIN
   RAISE NOTICE 'Migration complete: email is now UNIQUE NOT NULL on students';
   RAISE NOTICE 'Migration complete: otp_verifications now uses email column';
 END $$;
+
+-- ============================================================
+-- STEP 4: Add photo_fit column to candidates table
+-- ============================================================
+
+ALTER TABLE candidates
+ADD COLUMN IF NOT EXISTS photo_fit TEXT DEFAULT 'cover'
+CHECK (photo_fit IN ('cover', 'contain', 'fill'));
+
+COMMENT ON COLUMN candidates.photo_fit IS 'Controls how the candidate photo fits in the frame: cover (crop), contain (show full), fill (stretch)';
