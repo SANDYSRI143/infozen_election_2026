@@ -7,6 +7,9 @@ import { getAdminSession } from "@/lib/auth";
 import { electionSettingsSchema } from "@/lib/validations";
 import { clearRateLimitByPrefix } from "@/lib/rate-limit";
 
+// Prevent Next.js from caching this route
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getAdminSession();
@@ -32,6 +35,8 @@ export async function GET() {
     return NextResponse.json({
       election: data,
       stats: stats?.[0] || null,
+    }, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

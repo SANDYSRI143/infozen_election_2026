@@ -25,8 +25,8 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       const [electionRes, candidatesRes] = await Promise.all([
-        fetch("/api/admin/election"),
-        fetch("/api/admin/candidates?with_votes=true"),
+        fetch("/api/admin/election", { cache: "no-store" }),
+        fetch("/api/admin/candidates?with_votes=true", { cache: "no-store" }),
       ]);
 
       if (electionRes.ok) {
@@ -48,8 +48,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-    // Poll every 10 seconds for stats
-    const interval = setInterval(fetchData, 10000);
+    // Poll every 5 seconds for live stats during active elections
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, [fetchData]);
 

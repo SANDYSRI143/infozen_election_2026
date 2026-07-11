@@ -6,6 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/auth";
 import { candidateSchema } from "@/lib/validations";
 
+// Prevent Next.js from caching this route
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getAdminSession();
@@ -33,7 +36,9 @@ export async function GET(request: NextRequest) {
         vote_count: Number(r.vote_count) || 0,
         status: "active",
       }));
-      return NextResponse.json({ candidates: candidatesWithVotes });
+      return NextResponse.json({ candidates: candidatesWithVotes }, {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      });
     }
 
     const { data, error } = await supabase
@@ -46,7 +51,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
     }
 
-    return NextResponse.json({ candidates: data });
+    return NextResponse.json({ candidates: data }, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

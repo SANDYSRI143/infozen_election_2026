@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Quote, Award, Lightbulb } from "lucide-react";
 import type { Candidate } from "@/types";
-import { parsePhotoUrl, getPhotoAdjustStyle } from "@/lib/image-adjust";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -25,8 +24,6 @@ export default function CandidateCard({
     .join("")
     .toUpperCase()
     .slice(0, 2);
-
-  const parsedPhoto = parsePhotoUrl(candidate.photo_url);
 
   return (
     <motion.div
@@ -59,12 +56,8 @@ export default function CandidateCard({
           <div className="flex items-start gap-4">
             {/* Photo */}
             <div className="relative">
-              <Avatar className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700 overflow-hidden">
-                <AvatarImage 
-                  src={parsedPhoto.url || undefined} 
-                  alt={candidate.candidate_name} 
-                  style={getPhotoAdjustStyle(parsedPhoto.adjustments)}
-                />
+              <Avatar className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl border-2 border-[#E2E8F0] dark:border-slate-700">
+                <AvatarImage src={candidate.photo_url || undefined} alt={candidate.candidate_name} />
                 <AvatarFallback className="rounded-xl bg-[#DCEEFF] dark:bg-slate-700 text-[#4A90E2] dark:text-cyan-400 text-2xl sm:text-3xl font-semibold">
                   {initials}
                 </AvatarFallback>

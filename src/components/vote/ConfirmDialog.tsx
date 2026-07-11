@@ -73,24 +73,24 @@ export default function ConfirmDialog({
           })}
         </div>
 
-        <DialogFooter className="gap-3 sm:gap-3">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 border-[#E2E8F0]"
+            className="w-full sm:flex-1 border-[#E2E8F0] h-12 sm:h-14 text-base"
           >
             Go Back
           </Button>
           <Button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 bg-[#16A34A] hover:bg-[#15803D] text-white"
+            className="w-full sm:flex-1 bg-[#16A34A] hover:bg-[#15803D] text-white h-12 sm:h-14 text-base sm:text-lg font-semibold"
           >
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <CheckCircle2 className="w-5 h-5 mr-2" />
             )}
             {loading ? "Submitting..." : "Confirm Vote"}
           </Button>

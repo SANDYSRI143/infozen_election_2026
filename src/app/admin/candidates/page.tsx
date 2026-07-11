@@ -26,7 +26,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Pencil, Trash2, UserCheck, Loader2, RotateCcw, Upload, ImageIcon, X } from "lucide-react";
 import { POSITIONS } from "@/types";
 import type { Candidate, Position } from "@/types";
-import { parsePhotoUrl, buildPhotoUrl, getPhotoAdjustStyle } from "@/lib/image-adjust";
 
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -43,9 +42,6 @@ export default function CandidatesPage() {
     department: "",
     bio: "",
     photo_url: "",
-    zoom: 1,
-    x: 0,
-    y: 0,
   });
 
   const fetchCandidates = async () => {
@@ -68,31 +64,18 @@ export default function CandidatesPage() {
 
   const openAddDialog = () => {
     setEditCandidate(null);
-    setForm({ 
-      candidate_name: "", 
-      position: "", 
-      department: "", 
-      bio: "", 
-      photo_url: "", 
-      zoom: 1, 
-      x: 0, 
-      y: 0 
-    });
+    setForm({ candidate_name: "", position: "", department: "", bio: "", photo_url: "" });
     setDialogOpen(true);
   };
 
   const openEditDialog = (candidate: Candidate) => {
     setEditCandidate(candidate);
-    const { url, adjustments } = parsePhotoUrl(candidate.photo_url);
     setForm({
       candidate_name: candidate.candidate_name,
       position: candidate.position,
       department: candidate.department,
       bio: candidate.bio || "",
-      photo_url: url,
-      zoom: adjustments.zoom,
-      x: adjustments.x,
-      y: adjustments.y,
+      photo_url: candidate.photo_url || "",
     });
     setDialogOpen(true);
   };
@@ -103,20 +86,6 @@ export default function CandidatesPage() {
       return;
     }
 
-    const photoUrlToSave = buildPhotoUrl(form.photo_url, {
-      zoom: form.zoom,
-      x: form.x,
-      y: form.y,
-    });
-
-    const payload = {
-      candidate_name: form.candidate_name,
-      position: form.position,
-      department: form.department,
-      bio: form.bio,
-      photo_url: photoUrlToSave,
-    };
-
     setSaving(true);
     try {
       if (editCandidate) {
@@ -124,7 +93,7 @@ export default function CandidatesPage() {
         const res = await fetch("/api/admin/candidates", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editCandidate.id, ...payload }),
+          body: JSON.stringify({ id: editCandidate.id, ...form }),
         });
         if (res.ok) {
           toast.success("Candidate updated");
@@ -139,7 +108,7 @@ export default function CandidatesPage() {
         const res = await fetch("/api/admin/candidates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(form),
         });
         if (res.ok) {
           toast.success("Candidate added");
@@ -184,7 +153,7 @@ export default function CandidatesPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setForm((prev) => ({ ...prev, photo_url: data.url, zoom: 1, x: 0, y: 0 }));
+        setForm((prev) => ({ ...prev, photo_url: data.url }));
         toast.success("Photo uploaded successfully!");
       } else {
         const data = await res.json();
@@ -280,20 +249,12 @@ export default function CandidatesPage() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {(() => {
-                        const parsed = parsePhotoUrl(candidate.photo_url);
-                        return (
-                          <Avatar className="w-10 h-10 rounded-lg overflow-hidden">
-                            <AvatarImage 
-                              src={parsed.url || undefined} 
-                              style={getPhotoAdjustStyle(parsed.adjustments)}
-                            />
-                            <AvatarFallback className="rounded-lg bg-[#DCEEFF] text-[#4A90E2] text-sm">
-                              {candidate.candidate_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                        );
-                      })()}
+                      <Avatar className="w-10 h-10 rounded-lg">
+                        <AvatarImage src={candidate.photo_url || undefined} />
+                        <AvatarFallback className="rounded-lg bg-[#DCEEFF] text-[#4A90E2] text-sm">
+                          {candidate.candidate_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="font-medium text-[#1A1A1A]">
                           {candidate.candidate_name}
@@ -411,142 +372,24 @@ export default function CandidatesPage() {
             <div className="space-y-2">
               <Label className="font-medium">Candidate Photo</Label>
               
-              {/* Image Preview & Manual Adjustment Controls */}
+              {/* Image Preview */}
               {form.photo_url && (
-                <div className="space-y-4 p-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
-                  <div className="flex gap-4 items-center">
-                    <div 
-                      className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-[#E2E8F0] bg-white cursor-move select-none group"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        const tracker = e.currentTarget;
-                        tracker.setPointerCapture(e.pointerId);
-                        
-                        const startX = e.clientX;
-                        const startY = e.clientY;
-                        const startOffsetX = form.x;
-                        const startOffsetY = form.y;
-                        
-                        const handlePointerMove = (moveEvent: PointerEvent) => {
-                          const deltaX = moveEvent.clientX - startX;
-                          const deltaY = moveEvent.clientY - startY;
-                          const rect = tracker.getBoundingClientRect();
-                          const speedFactor = 1 / form.zoom;
-                          const newX = startOffsetX + (deltaX / rect.width) * 100 * speedFactor;
-                          const newY = startOffsetY + (deltaY / rect.height) * 100 * speedFactor;
-                          
-                          setForm(prev => ({
-                            ...prev,
-                            x: Math.max(-100, Math.min(100, newX)),
-                            y: Math.max(-100, Math.min(100, newY))
-                          }));
-                        };
-                        
-                        const handlePointerUp = () => {
-                          tracker.removeEventListener("pointermove", handlePointerMove);
-                          tracker.removeEventListener("pointerup", handlePointerUp);
-                        };
-                        
-                        tracker.addEventListener("pointermove", handlePointerMove);
-                        tracker.addEventListener("pointerup", handlePointerUp);
-                      }}
-                    >
-                      <img
-                        src={form.photo_url}
-                        alt="Preview"
-                        className="w-full h-full object-cover select-none pointer-events-none"
-                        style={{ 
-                          transform: `scale(${form.zoom}) translate(${form.x}%, ${form.y}%)`,
-                          transformOrigin: "center center",
-                          transition: "none"
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                      {/* Guide overlay */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
-                        <span className="text-white text-[10px] font-medium px-2 py-1 bg-black/60 rounded-md">
-                          Drag to reposition
-                        </span>
-                      </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, photo_url: "", zoom: 1, x: 0, y: 0 })}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors pointer-events-auto"
-                        title="Remove photo"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-
-                    {/* Quick Info */}
-                    <div className="flex-1 space-y-1 text-xs text-[#6B7280]">
-                      <p className="font-semibold text-[#1A1A1A]">Image Adjustment</p>
-                      <p>• Drag the photo inside the frame to adjust positioning.</p>
-                      <p>• Use the sliders below to fine-tune zoom & alignment.</p>
-                      <Button
-                        type="button"
-                        variant="link"
-                        onClick={() => setForm(prev => ({ ...prev, zoom: 1, x: 0, y: 0 }))}
-                        className="h-auto p-0 text-[#4A90E2] font-semibold flex items-center gap-1 animate-none"
-                      >
-                        <RotateCcw className="w-3 h-3" /> Reset adjustments
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Manual Adjustment Sliders */}
-                  <div className="space-y-3 pt-2 border-t border-[#E2E8F0] text-xs">
-                    <div className="space-y-1">
-                      <div className="flex justify-between font-medium">
-                        <span>Zoom ({form.zoom.toFixed(2)}x)</span>
-                        <span className="text-slate-400">1.00x - 3.00x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="3"
-                        step="0.05"
-                        value={form.zoom}
-                        onChange={(e) => setForm(prev => ({ ...prev, zoom: parseFloat(e.target.value) }))}
-                        className="w-full h-1.5 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#4A90E2]"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <div className="flex justify-between font-medium">
-                          <span>Horizontal ({Math.round(form.x)}%)</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="-100"
-                          max="100"
-                          step="1"
-                          value={form.x}
-                          onChange={(e) => setForm(prev => ({ ...prev, x: parseInt(e.target.value) }))}
-                          className="w-full h-1.5 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#4A90E2]"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex justify-between font-medium">
-                          <span>Vertical ({Math.round(form.y)}%)</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="-100"
-                          max="100"
-                          step="1"
-                          value={form.y}
-                          onChange={(e) => setForm(prev => ({ ...prev, y: parseInt(e.target.value) }))}
-                          className="w-full h-1.5 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#4A90E2]"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-[#E2E8F0] bg-[#F8FAFC]">
+                  <img
+                    src={form.photo_url}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, photo_url: "" })}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
               )}
 
@@ -584,16 +427,9 @@ export default function CandidatesPage() {
               </div>
               <Input
                 value={form.photo_url}
-                onChange={(e) => {
-                  const { url, adjustments } = parsePhotoUrl(e.target.value);
-                  setForm(prev => ({
-                    ...prev,
-                    photo_url: url,
-                    zoom: adjustments.zoom,
-                    x: adjustments.x,
-                    y: adjustments.y
-                  }));
-                }}
+                onChange={(e) =>
+                  setForm({ ...form, photo_url: e.target.value })
+                }
                 placeholder="https://... (paste image URL)"
                 className="border-[#E2E8F0] text-sm"
               />

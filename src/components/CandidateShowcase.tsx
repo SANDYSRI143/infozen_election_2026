@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Quote, Award, Lightbulb } from "lucide-react";
 import type { Candidate, Position } from "@/types";
-import { parsePhotoUrl, getPhotoAdjustStyle } from "@/lib/image-adjust";
 
 interface CandidateShowcaseProps {
   candidate: Candidate;
@@ -37,8 +36,6 @@ export default function CandidateShowcase({
     .toUpperCase()
     .slice(0, 2);
 
-  const parsedPhoto = parsePhotoUrl(candidate.photo_url);
-
   return (
     <motion.div
       layoutId={`candidate-${candidate.id}`}
@@ -68,12 +65,8 @@ export default function CandidateShowcase({
 
           {/* Candidate Photo & Info */}
           <div className="flex gap-4 mb-4">
-            <Avatar className="w-20 h-20 flex-shrink-0 ring-2 ring-[#4A90E2] overflow-hidden">
-              <AvatarImage 
-                src={parsedPhoto.url || ""} 
-                alt={candidate.candidate_name} 
-                style={getPhotoAdjustStyle(parsedPhoto.adjustments)}
-              />
+            <Avatar className="w-20 h-20 flex-shrink-0 ring-2 ring-[#4A90E2]">
+              <AvatarImage src={candidate.photo_url || ""} alt={candidate.candidate_name} />
               <AvatarFallback className="bg-[#4A90E2] text-white font-bold text-lg">
                 {initials}
               </AvatarFallback>
